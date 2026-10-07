@@ -1,0 +1,93 @@
+name: superlink-hrms
+
+x-api-environment: &api-environment
+  NODE_ENV: production
+  PORT: "4000"
+  APP_NAME: SuperLink HRMS
+  API_PUBLIC_URL: ${API_PUBLIC_URL:-http://localhost:8080}
+  # Only used by direct cross origin calls; the bundled client proxies on the same origin.
+  CORS_ORIGINS: ${CORS_ORIGINS:-http://localhost:8080}
+  DATABASE_URL: postgresql://hrms:hrms@db:5432/superlink_hrms?schema=public
+  JWT_SECRET: ${JWT_SECRET:-compose-only-secret-change-me-0123456789abcdef}
+  JWT_REFRESH_SECRET: ${JWT_REFRESH_SECRET:-compose-only-refresh-secret-change-me-0123456789}
+  STORAGE_DRIVER: local
+  STORAGE_LOCAL_PATH: /data/uploads
+  LOG_LEVEL: ${LOG_LEVEL:-info}
+  LOG_PRETTY: "false"
+  # Production refuses the out of the box demo passwords, so compose ships its own
+  # defaults. Replace every one of them before exposing this stack.
+  SEED_SUPER_ADMIN_PASSWORD: ${SEED_SUPER_ADMIN_PASSWORD:-ComposeDemo!Admin2026}
+  SEED_HR_ADMIN_PASSWORD: ${SEED_HR_ADMIN_PASSWORD:-ComposeDemo!Admin2026}
+  SEED_DEFAULT_PASSWORD: ${SEED_DEFAULT_PASSWORD:-ComposeDemo!Employee2026}
+
+services:
+  db:
+    image: postgres:18-alpine
+    environment:
+      POSTGRES_USER: hrms
+      POSTGRES_PASSWORD: hrms
+      POSTGRES_DB: superlink_hrms
+    volumes:
+      - db-data:/var/lib/postgresql
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U hrms -d superlink_hrms"]
+      interval: 5s
+      timeout: 5s
+      retries: 12
+    restart: unless-stopped
+
+  # One shot: applies pending migrations then seeds reference data (idempotent).
+  migrate:
+    build:
+      context: .
+      dockerfile: server/Dockerfile
+      target: migrate
+    environment: *api-environment
+    command: ["sh", "-c", "npm run db:deploy && npm run db:seed"]
+    depends_on:
+      db:
+        condition: service_healthy
+    restart: "no"
+
+  server:
+    build:
+      context: .
+      dockerfile: server/Dockerfile
+    environment: *api-environment
+    volumes:
+      - uploads:/data/uploads
+    ports:
+      - "${API_PORT:-4001}:4000"
+    depends_on:
+      db:
+        condition: service_healthy
+      migrate:
+        condition: service_completed_successfully
+    healthcheck:
+      test:
+        [
+          "CMD",
+          "node",
+          "-e",
+          "fetch('http://127.0.0.1:4000/api/v1/health').then((r) => process.exit(r.ok ? 0 : 1)).catch(() => process.exit(1))",
+        ]
+      interval: 10s
+      timeout: 5s
+      retries: 12
+      start_period: 15s
+    restart: unless-stopped
+
+  client:
+    build:
+      context: .
+      dockerfile: client/Dockerfile
+    ports:
+      - "${WEB_PORT:-8080}:80"
+    depends_on:
+      server:
+        condition: service_healthy
+    restart: unless-stopped
+
+volumes:
+  db-data:
+  uploads:

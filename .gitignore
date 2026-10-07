@@ -1,0 +1,33 @@
+node_modules/
+dist/
+build/
+coverage/
+.turbo/
+
+.env
+.env.local
+.env.*.local
+.env.test
+!.env.example
+
+# storage
+server/uploads/*
+!server/uploads/.gitkeep
+!server/uploads/documents/
+server/uploads/documents/*
+!server/uploads/documents/.gitkeep
+
+# logs
+*.log
+logs/
+
+# editors / os
+.vscode/*
+!.vscode/extensions.json
+.idea/
+.DS_Store
+Thumbs.db
+
+# misc
+*.tsbuildinfo
+.eslintcache

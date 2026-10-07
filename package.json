@@ -1,0 +1,45 @@
+{
+  "name": "superlink-hrms",
+  "version": "1.0.0",
+  "private": true,
+  "description": "SuperLink HRMS - Human Resource Management System for SuperLink IT Services",
+  "workspaces": [
+    "server",
+    "client"
+  ],
+  "engines": {
+    "node": ">=20.11.0"
+  },
+  "scripts": {
+    "dev": "concurrently -n api,web -c cyan,magenta \"npm:dev:server\" \"npm:dev:client\"",
+    "dev:server": "npm run dev --workspace server",
+    "dev:client": "npm run dev --workspace client",
+    "build": "npm run build --workspace server && npm run build --workspace client",
+    "start": "npm run start --workspace server",
+    "typecheck": "npm run typecheck --workspace server && npm run typecheck --workspace client",
+    "lint": "npm run lint --workspace server && npm run lint --workspace client",
+    "test": "npm run test --workspace server",
+    "test:coverage": "npm run test:coverage --workspace server",
+    "db:generate": "npm run prisma:generate --workspace server",
+    "db:migrate": "npm run prisma:migrate --workspace server",
+    "db:deploy": "npm run prisma:deploy --workspace server",
+    "db:seed": "npm run db:seed --workspace server",
+    "db:reset": "npm run prisma:reset --workspace server",
+    "db:studio": "npm run prisma:studio --workspace server",
+    "setup": "npm install && npm run db:generate && npm run db:migrate && npm run db:seed"
+  },
+  "devDependencies": {
+    "concurrently": "^9.2.1"
+  },
+  "overrides": {
+    "shell-quote": "^1.11.0",
+    "uuid": "11.1.1",
+    "deepmerge-ts": "8.0.2"
+  },
+  "allowScripts": {
+    "@prisma/client@6.19.3": true,
+    "@prisma/engines@6.19.3": true,
+    "esbuild@0.28.2": true,
+    "prisma@6.19.3": true
+  }
+}

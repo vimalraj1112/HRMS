@@ -1,0 +1,26 @@
+.git
+.gitignore
+node_modules
+**/node_modules
+**/dist
+**/build
+**/coverage
+**/*.tsbuildinfo
+**/.eslintcache
+
+# never ship local secrets or runtime state into an image
+.env
+.env.*
+**/.env
+**/.env.*
+!.env.example
+**/.env.example
+server/uploads
+**/server/uploads
+*.log
+logs
+
+Dockerfile
+**/Dockerfile
+docker-compose.yml
+README.md
