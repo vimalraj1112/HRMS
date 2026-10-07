@@ -12,6 +12,7 @@ import {
   ScrollText,
   Scale,
   Settings,
+  ShieldCheck,
   UserRound,
   Users,
   Wallet,
@@ -94,6 +95,7 @@ export const NAV_SECTIONS: { title: string; items: NavItem[] }[] = [
     items: [
       { label: 'Announcements', to: '/announcements', icon: Megaphone, roles: ALL_ROLES },
       { label: 'Reports', to: '/reports', icon: FileText, roles: ['SUPER_ADMIN', 'HR_ADMIN', 'HR_MANAGER', 'FINANCE'] },
+      { label: 'Users & Roles', to: '/users', icon: ShieldCheck, roles: HR_ROLES },
       { label: 'Audit Logs', to: '/audit-logs', icon: ScrollText, roles: ['SUPER_ADMIN'] },
       { label: 'Settings', to: '/settings', icon: Settings, roles: ['SUPER_ADMIN', 'HR_ADMIN'] },
     ],

@@ -12,6 +12,8 @@ export type ClientPermission =
   | 'department:manage'
   | 'designation:read'
   | 'designation:manage'
+  | 'user:read'
+  | 'user:manage'
   | 'attendance:mark'
   | 'attendance:read:own'
   | 'attendance:read:team'
@@ -87,6 +89,7 @@ const HR_STAFF: ClientPermission[] = [
   'department:manage',
   'designation:read',
   'designation:manage',
+  'user:read',
   'attendance:read:any',
   'attendance:correct',
   'attendance:import',
@@ -112,6 +115,7 @@ export const ROLE_PERMISSIONS: Record<Role, ClientPermission[]> = {
     'employee:read:team',
     'attendance:read:team',
     // The server grants SUPER_ADMIN every permission, so the UI must show them all.
+    'user:manage',
     'salary:manage',
     'payroll:read',
     'payroll:process',
@@ -125,6 +129,7 @@ export const ROLE_PERMISSIONS: Record<Role, ClientPermission[]> = {
     'employee:update',
     'department:read',
     'designation:read',
+    'user:read',
     'attendance:read:any',
     'attendance:correct',
     'leave:read:any',

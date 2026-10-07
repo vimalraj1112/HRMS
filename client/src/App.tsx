@@ -35,6 +35,7 @@ import { JobsPage } from '@/pages/recruitment/JobsPage';
 import { OffersPage } from '@/pages/recruitment/OffersPage';
 import { ReportsPage } from '@/pages/reports/ReportsPage';
 import { SettingsPage } from '@/pages/settings/SettingsPage';
+import { UsersPage } from '@/pages/users/UsersPage';
 import type { Role } from '@/types/api';
 
 const PEOPLE_ROLES: Role[] = ['SUPER_ADMIN', 'HR_ADMIN', 'HR_MANAGER', 'MANAGER'];
@@ -379,6 +380,17 @@ export default function App() {
           <ProtectedRoute roles={['SUPER_ADMIN', 'HR_ADMIN']}>
             <Shell>
               <SettingsPage />
+            </Shell>
+          </ProtectedRoute>
+        }
+      />
+
+      <Route
+        path="/users"
+        element={
+          <ProtectedRoute roles={HR_ROLES}>
+            <Shell>
+              <UsersPage />
             </Shell>
           </ProtectedRoute>
         }
