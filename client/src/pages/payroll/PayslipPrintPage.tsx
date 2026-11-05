@@ -1,87 +1,22 @@
 import { useQuery } from '@tanstack/react-query';
-import { ArrowLeft, Printer } from 'lucide-react';
-import { useEffect } from 'react';
+import { ArrowLeft, Download, Printer } from 'lucide-react';
+import { useEffect, useState } from 'react';
 import { useNavigate, useParams, useSearchParams } from 'react-router-dom';
+import { toast } from 'sonner';
 import { Button } from '@/components/ui/Button';
 import { CompanyLogo } from '@/components/ui/CompanyLogo';
+import { toMessage } from '@/lib/api';
+import {
+  amountInWords,
+  formatPayslipDate,
+  formatPayslipMoney,
+  payslipBatchFileName,
+  payslipFileName,
+} from '@/lib/payslip-format';
+import { downloadPayslips } from '@/lib/payslip-pdf';
 import { useAuthStore } from '@/stores/auth.store';
 import { getPayslipPrint, getPayslipPrintSheet } from '@/services/payroll.service';
 import type { PayslipPrint, PayslipPrintSheet } from '@/types/payroll';
-
-const money = (value: number): string =>
-  value.toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
-
-const dateLabel = (value: string): string => {
-  const [year, month, day] = value.slice(0, 10).split('-');
-  return `${day}/${month}/${year}`;
-};
-
-const ONES = [
-  '',
-  'One',
-  'Two',
-  'Three',
-  'Four',
-  'Five',
-  'Six',
-  'Seven',
-  'Eight',
-  'Nine',
-  'Ten',
-  'Eleven',
-  'Twelve',
-  'Thirteen',
-  'Fourteen',
-  'Fifteen',
-  'Sixteen',
-  'Seventeen',
-  'Eighteen',
-  'Nineteen',
-];
-
-const TENS = ['', '', 'Twenty', 'Thirty', 'Forty', 'Fifty', 'Sixty', 'Seventy', 'Eighty', 'Ninety'];
-
-function twoDigits(value: number): string {
-  if (value < 20) return ONES[value] ?? '';
-  const tens = TENS[Math.floor(value / 10)] ?? '';
-  const ones = value % 10 ? ` ${ONES[value % 10]}` : '';
-  return `${tens}${ones}`;
-}
-
-function threeDigits(value: number): string {
-  const hundred = Math.floor(value / 100);
-  const rest = value % 100;
-  const parts: string[] = [];
-  if (hundred) parts.push(`${ONES[hundred]} Hundred`);
-  if (rest) parts.push(twoDigits(rest));
-  return parts.join(' ');
-}
-
-function indianWords(value: number): string {
-  if (value === 0) return 'Zero';
-  let remaining = value;
-  const crore = Math.floor(remaining / 10000000);
-  remaining %= 10000000;
-  const lakh = Math.floor(remaining / 100000);
-  remaining %= 100000;
-  const thousand = Math.floor(remaining / 1000);
-  remaining %= 1000;
-
-  const parts: string[] = [];
-  if (crore) parts.push(`${indianWords(crore)} Crore`);
-  if (lakh) parts.push(`${twoDigits(lakh)} Lakh`);
-  if (thousand) parts.push(`${twoDigits(thousand)} Thousand`);
-  if (remaining) parts.push(threeDigits(remaining));
-  return parts.join(' ');
-}
-
-function amountInWords(value: number): string {
-  const rupees = Math.floor(value);
-  const paise = Math.round((value - rupees) * 100);
-  let result = `Rupees ${indianWords(rupees)}`;
-  if (paise > 0) result += ` and ${twoDigits(paise)} Paise`;
-  return `${result} Only`;
-}
 
 const COMPANY = {
   name: 'SuperLink IT Services Private Limited',
@@ -128,6 +63,22 @@ export function PayslipPrintPage() {
       : []
     : (sheet?.items ?? []);
 
+  const [isDownloading, setIsDownloading] = useState(false);
+
+  const download = async () => {
+    if (items.length === 0) return;
+    setIsDownloading(true);
+    try {
+      const monthLabel = sheet?.period.monthLabel ?? items[0].period.monthLabel;
+      await downloadPayslips(items, id ? payslipFileName(items[0]) : payslipBatchFileName(monthLabel));
+      toast.success(id ? 'Payslip downloaded' : `${items.length} payslips downloaded`);
+    } catch (error) {
+      toast.error(toMessage(error));
+    } finally {
+      setIsDownloading(false);
+    }
+  };
+
   return (
     <div className="min-h-screen bg-slate-100 py-6 print:bg-white print:py-0">
       <div className="mx-auto mb-4 flex w-[210mm] max-w-full items-center justify-between gap-3 px-2 print:hidden">
@@ -140,6 +91,14 @@ export function PayslipPrintPage() {
               {sheet.count} payslip{sheet.count === 1 ? '' : 's'} · {sheet.period.monthLabel}
             </span>
           ) : null}
+          <Button
+            variant="secondary"
+            leftIcon={<Download className="h-4 w-4" />}
+            onClick={() => void download()}
+            disabled={items.length === 0 || isDownloading}
+          >
+            {isDownloading ? 'Downloading…' : id ? 'Download PDF' : 'Download all'}
+          </Button>
           <Button leftIcon={<Printer className="h-4 w-4" />} onClick={() => window.print()} disabled={items.length === 0}>
             Print
           </Button>
@@ -213,7 +172,7 @@ function PayslipSheet({ payslip }: { payslip: PayslipPrint }) {
 
   const employeeRows: Array<[string, string, string, string]> = [
     ['Employee Name', fullName, 'Code', employee.employeeCode],
-    ['DOJ', dateLabel(employee.joiningDate), 'PAN', employee.panNumber ?? ''],
+    ['DOJ', formatPayslipDate(employee.joiningDate), 'PAN', employee.panNumber ?? ''],
     ['Bank A/c No.', employee.bankAccountNumber ?? '', 'ESI A/c No.', employee.esiNumber ?? ''],
     ['Department', employee.department?.name ?? '', 'Designation', employee.designation?.name ?? ''],
     ['Pay Mode', employee.payMode ?? '', 'Bank Name', employee.bankName ?? ''],
@@ -238,8 +197,8 @@ function PayslipSheet({ payslip }: { payslip: PayslipPrint }) {
       <p className="mb-2 mt-5 text-[11px]">
         PAYSLIP FOR THE MONTH OF <span className="font-semibold">{payslip.period.monthLabel}</span>
         <span className="ml-3">
-          (From <span className="font-semibold">{dateLabel(payslip.period.fromDate)}</span> To{' '}
-          <span className="font-semibold">{dateLabel(payslip.period.toDate)}</span>)
+          (From <span className="font-semibold">{formatPayslipDate(payslip.period.fromDate)}</span> To{' '}
+          <span className="font-semibold">{formatPayslipDate(payslip.period.toDate)}</span>)
         </span>
       </p>
 
@@ -297,12 +256,12 @@ function PayslipSheet({ payslip }: { payslip: PayslipPrint }) {
             return (
               <tr key={index}>
                 <td className="px-2 py-1">{earning?.[0] ?? ''}</td>
-                <td className="px-2 py-1 text-right">{earning ? money(0) : ''}</td>
+                <td className="px-2 py-1 text-right">{earning ? formatPayslipMoney(0) : ''}</td>
                 <td className="border-r border-black px-2 py-1 text-right">
-                  {earning ? money(earning[1]) : ''}
+                  {earning ? formatPayslipMoney(earning[1]) : ''}
                 </td>
                 <td className="border-r border-black px-2 py-1">{deduction?.[0] ?? ''}</td>
-                <td className="px-2 py-1 text-right">{deduction ? money(deduction[1]) : ''}</td>
+                <td className="px-2 py-1 text-right">{deduction ? formatPayslipMoney(deduction[1]) : ''}</td>
               </tr>
             );
           })}
@@ -313,9 +272,9 @@ function PayslipSheet({ payslip }: { payslip: PayslipPrint }) {
             <td className="px-2 py-1" colSpan={2}>
               Total Earnings
             </td>
-            <td className="border-r border-black px-2 py-1 text-right">{money(payslip.grossSalary)}</td>
+            <td className="border-r border-black px-2 py-1 text-right">{formatPayslipMoney(payslip.grossSalary)}</td>
             <td className="border-r border-black px-2 py-1">Total Deductions</td>
-            <td className="px-2 py-1 text-right">{money(payslip.totalDeductions)}</td>
+            <td className="px-2 py-1 text-right">{formatPayslipMoney(payslip.totalDeductions)}</td>
           </tr>
         </tbody>
       </table>
@@ -331,18 +290,18 @@ function PayslipSheet({ payslip }: { payslip: PayslipPrint }) {
             <div className="px-2 py-1">LTA REIMBURSEMENT</div>
           </div>
           <div>
-            <div className="px-2 py-1 text-right">{money(payslip.reimbursements.telephone)}</div>
-            <div className="px-2 py-1 text-right">{money(payslip.reimbursements.lta)}</div>
+            <div className="px-2 py-1 text-right">{formatPayslipMoney(payslip.reimbursements.telephone)}</div>
+            <div className="px-2 py-1 text-right">{formatPayslipMoney(payslip.reimbursements.lta)}</div>
           </div>
         </div>
         <div className="flex items-center justify-between border-t border-black px-2 py-1 font-bold">
           <span>TOTAL REIMBURSEMENT</span>
-          <span>{money(payslip.reimbursements.total)}</span>
+          <span>{formatPayslipMoney(payslip.reimbursements.total)}</span>
         </div>
         <div className="flex items-center border-t border-black px-2 py-1">
           <span className="w-[34%] font-bold">NET TRANSFER</span>
           <span>:</span>
-          <span className="ml-auto font-bold">{money(payslip.netSalary)}</span>
+          <span className="ml-auto font-bold">{formatPayslipMoney(payslip.netSalary)}</span>
         </div>
         <div className="flex items-start border-t border-black px-2 py-1">
           <span className="w-[34%] shrink-0 font-bold">IN WORDS</span>

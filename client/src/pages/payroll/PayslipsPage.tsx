@@ -1,6 +1,7 @@
 import { useQuery } from '@tanstack/react-query';
-import { Eye, Printer } from 'lucide-react';
+import { Download, Eye, Printer } from 'lucide-react';
 import { useState } from 'react';
+import { toast } from 'sonner';
 import { DataTable, type Column } from '@/components/data/DataTable';
 import { StatusBadge } from '@/components/ui/Badge';
 import { Button } from '@/components/ui/Button';
@@ -9,9 +10,17 @@ import { Select } from '@/components/ui/Input';
 import { Modal } from '@/components/ui/Modal';
 import { PageHeader } from '@/components/ui/PageHeader';
 import { Pagination } from '@/components/ui/Pagination';
+import { toMessage } from '@/lib/api';
 import { can } from '@/lib/permissions';
+import { payslipBatchFileName, payslipFileName } from '@/lib/payslip-format';
+import { downloadPayslips } from '@/lib/payslip-pdf';
 import { useAuthStore } from '@/stores/auth.store';
-import { getPayslip, listPayslips } from '@/services/payroll.service';
+import {
+  getPayslip,
+  getPayslipPrint,
+  getPayslipPrintSheet,
+  listPayslips,
+} from '@/services/payroll.service';
 import type { Payslip } from '@/types/payroll';
 
 const MONTHS = [
@@ -41,6 +50,7 @@ export function PayslipsPage() {
   const [year, setYear] = useState(String(new Date().getFullYear()));
   const [month, setMonth] = useState('');
   const [viewing, setViewing] = useState<Payslip | null>(null);
+  const [downloading, setDownloading] = useState<string | null>(null);
 
   const canReadAny = can(role, 'payslip:read:any');
   const canPrintAll = can(role, 'payslip:read:any');
@@ -48,6 +58,33 @@ export function PayslipsPage() {
   const years = [currentYear - 2, currentYear - 1, currentYear, currentYear + 1].map(String);
 
   const openPrint = (path: string) => window.open(path, '_blank', 'noopener');
+
+  const downloadOne = async (row: Payslip) => {
+    setDownloading(row.id);
+    try {
+      const print = await getPayslipPrint(row.id);
+      await downloadPayslips([print], payslipFileName(print));
+      toast.success('Payslip downloaded');
+    } catch (error) {
+      toast.error(toMessage(error));
+    } finally {
+      setDownloading(null);
+    }
+  };
+
+  const downloadAll = async () => {
+    if (!month) return;
+    setDownloading('all');
+    try {
+      const sheet = await getPayslipPrintSheet({ year: year || String(currentYear), month });
+      await downloadPayslips(sheet.items, payslipBatchFileName(sheet.period.monthLabel));
+      toast.success(`${sheet.count} payslip${sheet.count === 1 ? '' : 's'} downloaded`);
+    } catch (error) {
+      toast.error(toMessage(error));
+    } finally {
+      setDownloading(null);
+    }
+  };
 
   const payslips = useQuery({
     queryKey: ['payslips', { page, year, month, canReadAny }],
@@ -117,6 +154,15 @@ export function PayslipsPage() {
           <Button
             variant="ghost"
             size="icon"
+            aria-label={`Download payslip for ${periodLabel(row)}`}
+            disabled={downloading === row.id}
+            onClick={() => void downloadOne(row)}
+          >
+            <Download className="h-4 w-4" />
+          </Button>
+          <Button
+            variant="ghost"
+            size="icon"
             aria-label={`Print payslip for ${periodLabel(row)}`}
             onClick={() => openPrint(`/payroll/payslips/${row.id}/print`)}
           >
@@ -137,14 +183,24 @@ export function PayslipsPage() {
         description={canReadAny ? 'Every payslip generated in the system.' : 'Your payslips by month.'}
         actions={
           canPrintAll && month ? (
-            <Button
-              leftIcon={<Printer className="h-4 w-4" />}
-              onClick={() => openPrint(`/payroll/payslips/print-sheet?year=${year || currentYear}&month=${month}`)}
-            >
-              Print all for {MONTHS[Number(month) - 1]}
-            </Button>
+            <div className="flex flex-wrap items-center gap-2">
+              <Button
+                variant="secondary"
+                leftIcon={<Download className="h-4 w-4" />}
+                disabled={downloading === 'all'}
+                onClick={() => void downloadAll()}
+              >
+                {downloading === 'all' ? 'Downloading…' : `Download all for ${MONTHS[Number(month) - 1]}`}
+              </Button>
+              <Button
+                leftIcon={<Printer className="h-4 w-4" />}
+                onClick={() => openPrint(`/payroll/payslips/print-sheet?year=${year || currentYear}&month=${month}`)}
+              >
+                Print all for {MONTHS[Number(month) - 1]}
+              </Button>
+            </div>
           ) : canPrintAll ? (
-            <span className="text-xs text-slate-500">Pick a month to print all payslips</span>
+            <span className="text-xs text-slate-500">Pick a month to download or print all payslips</span>
           ) : null
         }
       />
@@ -204,6 +260,21 @@ function PayslipDialog({ payslip: summary, onClose }: { payslip: Payslip; onClos
   });
   const payslip = payslipQuery.data;
 
+  const [isDownloading, setIsDownloading] = useState(false);
+
+  const download = async () => {
+    setIsDownloading(true);
+    try {
+      const print = await getPayslipPrint(payslip.id);
+      await downloadPayslips([print], payslipFileName(print));
+      toast.success('Payslip downloaded');
+    } catch (error) {
+      toast.error(toMessage(error));
+    } finally {
+      setIsDownloading(false);
+    }
+  };
+
   const earnings: Array<[string, number]> = [
     ['Basic salary', payslip.basicSalary],
     ['HRA', payslip.hra],
@@ -238,6 +309,14 @@ function PayslipDialog({ payslip: summary, onClose }: { payslip: Payslip; onClos
         <div className="flex justify-end gap-2">
           <Button variant="secondary" onClick={onClose}>
             Close
+          </Button>
+          <Button
+            variant="secondary"
+            leftIcon={<Download className="h-4 w-4" />}
+            disabled={isDownloading}
+            onClick={() => void download()}
+          >
+            {isDownloading ? 'Downloading…' : 'Download'}
           </Button>
           <Button
             leftIcon={<Printer className="h-4 w-4" />}
