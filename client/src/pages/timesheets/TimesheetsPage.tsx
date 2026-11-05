@@ -137,7 +137,7 @@ export function TimesheetsPage({ mode }: { mode: 'my' | 'all' }) {
     <>
       <PageHeader
         title={mode === 'my' ? 'My Timesheet' : 'Timesheets'}
-        description="Monday to Sunday. Monday–Friday 8 hours, Saturday 5 hours, 45 hours a week. Leave and holidays are credited automatically."
+        description="Monday to Sunday. Monday–Friday 8 hours, Saturday 5 hours, 45 hours a week. Hours come from attendance check-in/check-out; leave and holidays are credited automatically."
         actions={
           <div className="flex flex-wrap items-center gap-2 print:hidden">
             <Button variant="secondary" size="icon" aria-label="Previous week" onClick={() => shiftWeek(-7)}>

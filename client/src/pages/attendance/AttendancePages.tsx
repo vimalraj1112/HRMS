@@ -1,6 +1,6 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { Pencil, Plus, Search } from 'lucide-react';
-import { useState } from 'react';
+import { useMemo, useState } from 'react';
 import { toast } from 'sonner';
 import { z } from 'zod';
 import { DataTable, type Column } from '@/components/data/DataTable';
@@ -15,6 +15,7 @@ import { toMessage } from '@/lib/api';
 import { can } from '@/lib/permissions';
 import { formatDate, fullName } from '@/lib/utils';
 import { correctAttendance, listAttendance, markAttendance, type AttendanceScope } from '@/services/attendance.service';
+import { listEmployees } from '@/services/employee.service';
 import { useAuthStore } from '@/stores/auth.store';
 import {
   ATTENDANCE_STATUSES,
@@ -105,6 +106,23 @@ export function AttendanceRegisterPage({ scope }: { scope: AttendanceScope }) {
   const [marking, setMarking] = useState(false);
   const [correcting, setCorrecting] = useState<AttendanceRecord | null>(null);
 
+  const canRecordForOthers = scope !== 'my';
+
+  const employees = useQuery({
+    queryKey: ['employees', 'attendance-picker'],
+    enabled: canRecordForOthers,
+    queryFn: () => listEmployees({ limit: 100, sortOrder: 'asc' }),
+  });
+
+  const employeeOptions = useMemo(
+    () =>
+      (employees.data?.items ?? []).map((employee) => ({
+        value: employee.id,
+        label: `${fullName(employee)} (${employee.employeeCode})`,
+      })),
+    [employees.data],
+  );
+
   const register = useQuery({
     queryKey: ['attendance', scope, { page, search, from, to, status }],
     queryFn: () =>
@@ -124,6 +142,7 @@ export function AttendanceRegisterPage({ scope }: { scope: AttendanceScope }) {
 
   const invalidate = () => {
     void queryClient.invalidateQueries({ queryKey: ['attendance'] });
+    void queryClient.invalidateQueries({ queryKey: ['timesheets'] });
   };
 
   const save = useMutation({
@@ -215,15 +234,17 @@ export function AttendanceRegisterPage({ scope }: { scope: AttendanceScope }) {
         title={COPY[scope].title}
         description={COPY[scope].description}
         actions={
-          <Button
-            leftIcon={<Plus className="h-4 w-4" />}
-            onClick={() => {
-              setMarking(true);
-              save.reset();
-            }}
-          >
-            {scope === 'my' ? 'Mark today' : 'Record attendance'}
-          </Button>
+          scope === 'my' || canCorrect ? (
+            <Button
+              leftIcon={<Plus className="h-4 w-4" />}
+              onClick={() => {
+                setMarking(true);
+                save.reset();
+              }}
+            >
+              {scope === 'my' ? 'Mark today' : 'Record attendance'}
+            </Button>
+          ) : null
         }
       />
 
@@ -284,7 +305,8 @@ export function AttendanceRegisterPage({ scope }: { scope: AttendanceScope }) {
         <AttendanceDialog
           key={correcting?.id ?? 'new'}
           record={correcting}
-          canPickEmployee={scope !== 'my'}
+          canPickEmployee={canRecordForOthers}
+          employeeOptions={employeeOptions}
           isSubmitting={save.isPending}
           onClose={() => {
             setMarking(false);
@@ -300,12 +322,14 @@ export function AttendanceRegisterPage({ scope }: { scope: AttendanceScope }) {
 function AttendanceDialog({
   record,
   canPickEmployee,
+  employeeOptions,
   isSubmitting,
   onClose,
   onSubmit,
 }: {
   record: AttendanceRecord | null;
   canPickEmployee: boolean;
+  employeeOptions: { value: string; label: string }[];
   isSubmitting: boolean;
   onClose: () => void;
   onSubmit: (values: MarkValues) => void;
@@ -334,11 +358,16 @@ function AttendanceDialog({
       : ATTENDANCE_STATUSES.filter((option) => (SELF_MARKABLE_STATUSES as readonly string[]).includes(option.value));
 
   const submit = () => {
+    if (!editing && canPickEmployee && !values.employeeId) {
+      setErrors({ employeeId: 'Select the employee this record belongs to' });
+      return;
+    }
+
     const result = markSchema.safeParse(values);
     if (!result.success) {
       const fieldErrors: Record<string, string> = {};
       for (const issue of result.error.issues) fieldErrors[issue.path.join('.')] = issue.message;
-      setErrors(fieldErrors);
+      setErrors((current) => ({ ...current, ...fieldErrors }));
       return;
     }
 
@@ -369,6 +398,27 @@ function AttendanceDialog({
       }
     >
       <div className="space-y-4">
+        {!editing && canPickEmployee ? (
+          <Select
+            label="Employee"
+            value={values.employeeId ?? ''}
+            error={errors.employeeId}
+            placeholder="Select employee"
+            options={employeeOptions}
+            onChange={(event) => {
+              setValues({ ...values, employeeId: event.target.value });
+              setErrors((current) => ({ ...current, employeeId: '' }));
+            }}
+          />
+        ) : null}
+
+        {editing ? (
+          <div className="rounded-lg bg-slate-50 px-3 py-2 text-sm text-slate-700 ring-1 ring-slate-200">
+            {fullName(record.employee)}{' '}
+            <span className="text-xs text-slate-500">({record.employee.employeeCode})</span>
+          </div>
+        ) : null}
+
         {!editing ? (
           <Input
             label="Date"
@@ -401,6 +451,7 @@ function AttendanceDialog({
             type="time"
             value={values.checkOut ?? ''}
             error={errors.checkOut}
+            hint="Fill both to calculate the hours on the timesheet."
             onChange={(event) => setValues({ ...values, checkOut: event.target.value })}
           />
         </div>
