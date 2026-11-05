@@ -84,9 +84,16 @@ export const listPayslipsQuerySchema = paginationQuerySchema.extend({
   status: z.enum(['DRAFT', 'PROCESSED', 'LOCKED']).optional(),
 });
 
+export const payslipPrintSheetQuerySchema = z.object({
+  year: yearFilter,
+  month: monthFilter,
+  employeeId: z.string().uuid().optional(),
+});
+
 export type ListSalaryStructuresQuery = z.infer<typeof listSalaryStructuresQuerySchema>;
 export type CreateSalaryStructureBody = z.infer<typeof createSalaryStructureSchema>;
 export type UpdateSalaryStructureBody = z.infer<typeof updateSalaryStructureSchema>;
 export type ListPayrollRunsQuery = z.infer<typeof listPayrollRunsQuerySchema>;
 export type ProcessPayrollBody = z.infer<typeof processPayrollSchema>;
 export type ListPayslipsQuery = z.infer<typeof listPayslipsQuerySchema>;
+export type PayslipPrintSheetQuery = z.infer<typeof payslipPrintSheetQuerySchema>;

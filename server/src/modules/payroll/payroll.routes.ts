@@ -7,6 +7,8 @@ import {
   createSalaryStructureController,
   deleteSalaryStructureController,
   getPayslipController,
+  getPayslipPrintController,
+  getPayslipPrintSheetController,
   getSalaryStructureController,
   listPayrollRunsController,
   listPayslipsController,
@@ -21,6 +23,7 @@ import {
   listPayslipsQuerySchema,
   listSalaryStructuresQuerySchema,
   payrollIdParamSchema,
+  payslipPrintSheetQuerySchema,
   processPayrollSchema,
   updateSalaryStructureSchema,
 } from './payroll.validator';
@@ -87,6 +90,19 @@ payrollRouter.get(
   '/payslips',
   validate({ query: listPayslipsQuerySchema }),
   listPayslipsController,
+);
+
+payrollRouter.get(
+  '/payslips/print-sheet',
+  requirePermission(PERMISSIONS.PAYSLIP_READ_ANY),
+  validate({ query: payslipPrintSheetQuerySchema }),
+  getPayslipPrintSheetController,
+);
+
+payrollRouter.get(
+  '/payslips/:id/print',
+  validate({ params: payrollIdParamSchema }),
+  getPayslipPrintController,
 );
 
 payrollRouter.get(

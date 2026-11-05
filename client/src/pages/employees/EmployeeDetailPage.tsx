@@ -200,6 +200,10 @@ export function EmployeeProfile({ id, selfService = false }: { id: string; selfS
                 <Detail label="Bank name" value={record.bankName ?? '—'} />
                 <Detail label="IFSC code" value={record.bankIfsc ?? '—'} />
                 <Detail label="Account number" value={record.bankAccountNumber ?? '—'} />
+                <Detail label="PF number" value={record.pfNumber ?? '—'} />
+                <Detail label="UAN" value={record.uan ?? '—'} />
+                <Detail label="ESI account number" value={record.esiNumber ?? '—'} />
+                <Detail label="Pay mode" value={record.payMode ?? '—'} />
               </CardContent>
             </Card>
           ) : (

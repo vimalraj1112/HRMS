@@ -42,6 +42,10 @@ const employeeBase = {
   bankName: z.string().trim().max(120).optional(),
   bankAccountNumber: z.string().trim().max(40).optional(),
   bankIfsc: z.string().trim().max(20).optional(),
+  esiNumber: z.string().trim().max(30).optional(),
+  pfNumber: z.string().trim().max(30).optional(),
+  uan: z.string().trim().max(20).optional(),
+  payMode: z.string().trim().max(30).optional(),
 };
 
 export const createEmployeeSchema = z.object({
@@ -75,6 +79,10 @@ export const updateEmployeeSchema = z
     bankName: z.string().trim().max(120).optional(),
     bankAccountNumber: z.string().trim().max(40).optional(),
     bankIfsc: z.string().trim().max(20).optional(),
+    esiNumber: z.string().trim().max(30).optional(),
+    pfNumber: z.string().trim().max(30).optional(),
+    uan: z.string().trim().max(20).optional(),
+    payMode: z.string().trim().max(30).optional(),
     profilePhotoUrl: z.string().url().max(500).optional(),
   })
   .refine((value) => Object.values(value).some((entry) => entry !== undefined), {

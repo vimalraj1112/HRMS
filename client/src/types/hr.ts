@@ -89,6 +89,10 @@ export interface EmployeeDetail extends EmployeeSummary {
   bankName: string | null;
   bankAccountNumber: string | null;
   bankIfsc: string | null;
+  esiNumber: string | null;
+  pfNumber: string | null;
+  uan: string | null;
+  payMode: string | null;
   createdAt: string;
   updatedAt: string;
   directReports: DirectReportRef[];
@@ -170,6 +174,10 @@ export interface EmployeePayload {
   bankName?: string;
   bankAccountNumber?: string;
   bankIfsc?: string;
+  esiNumber?: string;
+  pfNumber?: string;
+  uan?: string;
+  payMode?: string;
   profilePhotoUrl?: string;
 }
 

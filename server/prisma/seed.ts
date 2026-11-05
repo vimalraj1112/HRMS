@@ -481,6 +481,14 @@ export async function runSeed(): Promise<void> {
         departmentId: departmentMap.get(entry.departmentCode),
         designationId: designationMap.get(entry.designationCode),
         status: EmployeeStatus.ACTIVE,
+        bankName: 'HDFC Bank',
+        bankAccountNumber: `50100${String(100000000 + index * 137)}`,
+        bankIfsc: 'HDFC0000123',
+        panNumber: `ABCPE${String(1234 + index)}K`,
+        esiNumber: `ESI${String(3100000 + index * 17)}`,
+        pfNumber: `PF/BLR/${String(10000 + index)}`,
+        uan: `10${String(100000000000 + index * 7919)}`,
+        payMode: 'Bank Transfer',
       },
       create: {
         employeeCode: entry.employeeCode,
@@ -505,6 +513,10 @@ export async function runSeed(): Promise<void> {
         bankAccountNumber: `50100${String(100000000 + index * 137)}`,
         bankIfsc: 'HDFC0000123',
         panNumber: `ABCPE${String(1234 + index)}K`,
+        esiNumber: `ESI${String(3100000 + index * 17)}`,
+        pfNumber: `PF/BLR/${String(10000 + index)}`,
+        uan: `10${String(100000000000 + index * 7919)}`,
+        payMode: 'Bank Transfer',
       },
     });
 

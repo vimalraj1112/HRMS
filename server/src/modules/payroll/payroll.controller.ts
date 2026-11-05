@@ -10,6 +10,7 @@ import type {
   ListPayrollRunsQuery,
   ListPayslipsQuery,
   ListSalaryStructuresQuery,
+  PayslipPrintSheetQuery,
   ProcessPayrollBody,
   UpdateSalaryStructureBody,
 } from './payroll.validator';
@@ -92,4 +93,22 @@ export async function getPayslipController(req: Request, res: Response): Promise
   const scope = await resolveEmployeeScope(req);
   const payslip = await payrollService.getPayslip(id, actorOf(req), scope, getRequestMeta(req));
   sendSuccess(res, payslip, 'Payslip retrieved');
+}
+
+export async function getPayslipPrintController(req: Request, res: Response): Promise<void> {
+  const { id } = getParams<{ id: string }>(req);
+  const scope = await resolveEmployeeScope(req);
+  const payslip = await payrollService.getPayslipForPrint(id, actorOf(req), scope, getRequestMeta(req));
+  sendSuccess(res, payslip, 'Payslip print data retrieved');
+}
+
+export async function getPayslipPrintSheetController(req: Request, res: Response): Promise<void> {
+  const scope = await resolveEmployeeScope(req);
+  const result = await payrollService.getPayslipPrintSheet(
+    getQuery<PayslipPrintSheetQuery>(req),
+    actorOf(req),
+    scope,
+    getRequestMeta(req),
+  );
+  sendSuccess(res, result, 'Payslip print sheet retrieved');
 }

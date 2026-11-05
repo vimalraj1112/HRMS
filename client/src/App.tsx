@@ -7,6 +7,7 @@ import { ChangePasswordPage } from '@/pages/auth/ChangePasswordPage';
 import { LoginPage } from '@/pages/auth/LoginPage';
 import { AuditLogsPage } from '@/pages/audit/AuditLogsPage';
 import { PayrollRunsPage } from '@/pages/payroll/PayrollRunsPage';
+import { PayslipPrintPage } from '@/pages/payroll/PayslipPrintPage';
 import { PayslipsPage } from '@/pages/payroll/PayslipsPage';
 import { SalaryStructuresPage } from '@/pages/payroll/SalaryStructuresPage';
 import { AttendancePage, MyAttendancePage, TeamAttendancePage } from '@/pages/attendance/AttendancePages';
@@ -274,6 +275,24 @@ export default function App() {
             <Shell>
               <PayslipsPage />
             </Shell>
+          </ProtectedRoute>
+        }
+      />
+
+      <Route
+        path="/payroll/payslips/print-sheet"
+        element={
+          <ProtectedRoute>
+            <PayslipPrintPage />
+          </ProtectedRoute>
+        }
+      />
+
+      <Route
+        path="/payroll/payslips/:id/print"
+        element={
+          <ProtectedRoute>
+            <PayslipPrintPage />
           </ProtectedRoute>
         }
       />

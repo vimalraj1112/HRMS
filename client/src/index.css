@@ -59,4 +59,8 @@
   .timesheet-sheet:last-child {
     break-after: auto;
   }
+
+  .payslip-sheet + .payslip-sheet {
+    break-before: page;
+  }
 }

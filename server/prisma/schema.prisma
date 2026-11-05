@@ -446,6 +446,10 @@ model Employee {
   bankName              String?        @map("bank_name") @db.VarChar(120)
   bankAccountNumber     String?        @map("bank_account_number") @db.VarChar(40)
   bankIfsc              String?        @map("bank_ifsc") @db.VarChar(20)
+  esiNumber             String?        @map("esi_number") @db.VarChar(30)
+  pfNumber              String?        @map("pf_number") @db.VarChar(30)
+  uan                   String?        @db.VarChar(20)
+  payMode               String?        @map("pay_mode") @db.VarChar(30)
   createdAt             DateTime       @default(now()) @map("created_at")
   updatedAt             DateTime       @updatedAt @map("updated_at")
 

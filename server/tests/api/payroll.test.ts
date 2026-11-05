@@ -30,6 +30,40 @@ interface PayslipRow {
   status: string;
 }
 
+interface PayslipPrintRow extends PayslipRow {
+  employee: {
+    employeeCode: string;
+    firstName: string;
+    lastName: string;
+    joiningDate: string;
+    panNumber: string | null;
+    bankName: string | null;
+    bankAccountNumber: string | null;
+    esiNumber: string | null;
+    pfNumber: string | null;
+    uan: string | null;
+    payMode: string | null;
+    department: { name: string } | null;
+    designation: { name: string } | null;
+  };
+  period: { monthLabel: string; fromDate: string; toDate: string };
+  days: {
+    totalDays: number;
+    weeklyOff: number;
+    paidHolidays: number;
+    workingDays: number;
+    lwp: number;
+    presentDays: number;
+    paidLeaves: number;
+    maximumPayableDays: number;
+    netPaidDays: number;
+    newJoinerArrearDays: number;
+    lop: number;
+  };
+  reimbursements: { telephone: number; lta: number; total: number };
+  newJoinerArrearDays: number;
+}
+
 /** The month before the current one, so payroll can be processed. */
 function previousMonth(): { year: number; month: number } {
   const now = new Date();
@@ -287,6 +321,79 @@ describe('/api/v1/payroll', () => {
       .expect(400);
   });
 
+  it('returns printable payslip data in the company template shape', async () => {
+    const payslips = await request(app)
+      .get(`/api/v1/payroll/payslips?year=${period.year}&month=${period.month}&limit=100`)
+      .set(bearer(employee))
+      .expect(200);
+
+    const row = (payslips.body.data as PayslipRow[])[0];
+    expect(row).toBeDefined();
+    if (!row) throw new Error('No payslip generated for the test employee');
+
+    const printed = await request(app)
+      .get(`/api/v1/payroll/payslips/${row.id}/print`)
+      .set(bearer(employee))
+      .expect(200);
+
+    const data = printed.body.data as PayslipPrintRow;
+    expect(data.employee.employeeCode).toBeTruthy();
+    expect(data.employee.joiningDate).toBeTruthy();
+    expect(data.period.fromDate).toMatch(/^\d{4}-\d{2}-\d{2}$/);
+    expect(data.period.toDate).toMatch(/^\d{4}-\d{2}-\d{2}$/);
+    expect(data.period.monthLabel).toContain(String(period.year));
+
+    expect(data.days.totalDays).toBeGreaterThanOrEqual(28);
+    expect(data.days.weeklyOff).toBeGreaterThan(0);
+    expect(data.days.workingDays).toBe(row.workingDays);
+    expect(data.days.maximumPayableDays).toBe(row.workingDays);
+    expect(data.days.presentDays).toBe(row.daysPresent);
+    expect(data.days.paidLeaves).toBe(row.daysPaidLeave);
+    expect(data.days.lop).toBe(row.lopDays);
+    expect(data.days.netPaidDays).toBe(Math.max(0, row.workingDays - row.lopDays));
+    expect(data.days.newJoinerArrearDays).toBe(0);
+
+    expect(data.reimbursements).toEqual({ telephone: 0, lta: 0, total: 0 });
+    expect(data.netSalary).toBe(row.netSalary);
+  });
+
+  it('prints a whole month for finance and keeps the sheet scoped', async () => {
+    const sheet = await request(app)
+      .get(`/api/v1/payroll/payslips/print-sheet?year=${period.year}&month=${period.month}`)
+      .set(bearer(finance))
+      .expect(200);
+
+    const data = sheet.body.data as { count: number; items: PayslipPrintRow[] };
+    expect(data.count).toBeGreaterThan(0);
+    expect(data.items).toHaveLength(data.count);
+    expect(data.items.every((item) => item.period.monthLabel.includes(String(period.year)))).toBe(true);
+
+    const scoped = await request(app)
+      .get(`/api/v1/payroll/payslips/print-sheet?year=${period.year}&month=${period.month}`)
+      .set(bearer(hrAdmin))
+      .expect(200);
+    expect((scoped.body.data as { count: number }).count).toBeGreaterThan(0);
+
+    // The bulk sheet is an HR/finance report, not an employee self-service endpoint.
+    await request(app)
+      .get(`/api/v1/payroll/payslips/print-sheet?year=${period.year}&month=${period.month}`)
+      .set(bearer(employee))
+      .expect(403);
+
+    await request(app).get('/api/v1/payroll/payslips/print-sheet').set(bearer(finance)).expect(400);
+  });
+
+  it('refuses to print another employee payslip', async () => {
+    const other = await prisma.payslip.findFirst({
+      where: { employeeId: { not: employeeRecordId }, month: period.month, year: period.year },
+      select: { id: true },
+    });
+
+    if (other) {
+      await request(app).get(`/api/v1/payroll/payslips/${other.id}/print`).set(bearer(employee)).expect(403);
+    }
+  });
+
   it('refuses to delete a structure that has taken effect', async () => {
     // A structure already covering today cannot be removed, only deactivated.
     const inEffect = await prisma.salaryStructure.findFirst({
@@ -346,8 +453,8 @@ describe('/api/v1/payroll', () => {
       .set(bearer(superAdmin))
       .expect(200);
 
-    expect((payslipAudit.body.data as Array<{ userEmail: string | null }>)[0]?.userEmail).toBe(
-      ACCOUNTS.employee.email,
-    );
+    const payslipRows = payslipAudit.body.data as Array<{ userEmail: string | null }>;
+    expect(payslipRows.some((row) => row.userEmail === ACCOUNTS.employee.email)).toBe(true);
+    expect(payslipRows.some((row) => row.userEmail === ACCOUNTS.hrAdmin.email)).toBe(true);
   });
 });

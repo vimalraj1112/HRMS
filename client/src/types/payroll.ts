@@ -77,6 +77,58 @@ export interface Payslip {
   employee: { id: string; employeeCode: string; firstName: string; lastName: string; department: OrgRef | null };
 }
 
+export interface PayslipEmployee {
+  id: string;
+  employeeCode: string;
+  firstName: string;
+  middleName: string | null;
+  lastName: string;
+  joiningDate: string;
+  panNumber: string | null;
+  bankName: string | null;
+  bankAccountNumber: string | null;
+  esiNumber: string | null;
+  pfNumber: string | null;
+  uan: string | null;
+  payMode: string | null;
+  department: OrgRef | null;
+  designation: OrgRef | null;
+}
+
+export interface PayslipDays {
+  totalDays: number;
+  weeklyOff: number;
+  paidHolidays: number;
+  workingDays: number;
+  lwp: number;
+  presentDays: number;
+  paidLeaves: number;
+  maximumPayableDays: number;
+  netPaidDays: number;
+  newJoinerArrearDays: number;
+  lop: number;
+}
+
+export interface PayslipPrint extends Payslip {
+  employee: PayslipEmployee;
+  period: { monthLabel: string; fromDate: string; toDate: string };
+  days: PayslipDays;
+  reimbursements: { telephone: number; lta: number; total: number };
+  newJoinerArrearDays: number;
+}
+
+export interface PayslipPrintSheet {
+  period: { monthLabel: string; fromDate: string; toDate: string };
+  count: number;
+  items: PayslipPrint[];
+}
+
+export interface PayslipPrintQuery {
+  year: string;
+  month: string;
+  employeeId?: string;
+}
+
 export interface ProcessPayrollResult {
   id: string;
   month: number;

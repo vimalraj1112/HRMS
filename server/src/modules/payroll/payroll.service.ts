@@ -798,3 +798,211 @@ export async function getPayslip(id: string, actor: Actor, scope: EmployeeScope,
 
   return serializePayslip(payslip);
 }
+
+const PAYSLIP_PRINT_SELECT = {
+  ...PAYSLIP_SELECT,
+  employee: {
+    select: {
+      ...EMPLOYEE_BRIEF,
+      middleName: true,
+      joiningDate: true,
+      panNumber: true,
+      bankName: true,
+      bankAccountNumber: true,
+      esiNumber: true,
+      pfNumber: true,
+      uan: true,
+      payMode: true,
+      designation: { select: { id: true, name: true } },
+    },
+  },
+} as const;
+
+const MONTH_NAMES = [
+  'January',
+  'February',
+  'March',
+  'April',
+  'May',
+  'June',
+  'July',
+  'August',
+  'September',
+  'October',
+  'November',
+  'December',
+];
+
+interface PayslipDays {
+  totalDays: number;
+  weeklyOff: number;
+  paidHolidays: number;
+  workingDays: number;
+  lwp: number;
+  presentDays: number;
+  paidLeaves: number;
+  maximumPayableDays: number;
+  netPaidDays: number;
+  newJoinerArrearDays: number;
+  lop: number;
+}
+
+/**
+ * Rebuilds the day block printed on the company payslip. Weekends and paid holidays
+ * come from the calendar, LWP from approved unpaid leave, and LOP from the payroll run.
+ */
+async function payslipDaysFor(payslip: {
+  employeeId: string;
+  month: number;
+  year: number;
+  workingDays: number;
+  daysPresent: number;
+  daysPaidLeave: number;
+  lopDays: number;
+}): Promise<PayslipDays> {
+  const { start, end } = monthBounds(payslip.year, payslip.month);
+
+  let totalDays = 0;
+  let weeklyOff = 0;
+  for (const day of eachUtcDay(start, end)) {
+    totalDays += 1;
+    if (isWeekend(day)) weeklyOff += 1;
+  }
+
+  const holidays = await prisma.holiday.findMany({
+    where: { isActive: true, date: { gte: start, lte: end } },
+    select: { date: true },
+  });
+  const holidayKeys = new Set(holidays.map((holiday) => holiday.date.toISOString().slice(0, 10)));
+  const paidHolidays = holidays.filter((holiday) => !isWeekend(holiday.date)).length;
+
+  const unpaidLeaves = await prisma.leaveRequest.findMany({
+    where: {
+      employeeId: payslip.employeeId,
+      status: 'APPROVED',
+      leaveType: { isPaid: false },
+      startDate: { lte: end },
+      endDate: { gte: start },
+    },
+    select: { startDate: true, endDate: true },
+  });
+
+  let lwp = 0;
+  for (const leave of unpaidLeaves) {
+    const from = leave.startDate < start ? start : leave.startDate;
+    const to = leave.endDate > end ? end : leave.endDate;
+    if (from > to) continue;
+    for (const day of eachUtcDay(from, to)) {
+      if (isWeekend(day) || holidayKeys.has(day.toISOString().slice(0, 10))) continue;
+      lwp += 1;
+    }
+  }
+
+  const maximumPayableDays = payslip.workingDays;
+  const lop = payslip.lopDays;
+
+  return {
+    totalDays,
+    weeklyOff,
+    paidHolidays,
+    workingDays: payslip.workingDays,
+    lwp,
+    presentDays: payslip.daysPresent,
+    paidLeaves: payslip.daysPaidLeave,
+    maximumPayableDays,
+    netPaidDays: Math.max(0, maximumPayableDays - lop),
+    newJoinerArrearDays: 0,
+    lop,
+  };
+}
+
+function payslipPeriod(year: number, month: number) {
+  const { start, end } = monthBounds(year, month);
+  return {
+    monthLabel: `${MONTH_NAMES[month - 1]} ${year}`,
+    fromDate: toDateInputValue(start),
+    toDate: toDateInputValue(end),
+  };
+}
+
+async function serializePrintablePayslip<
+  T extends Record<(typeof PAYSLIP_MONEY_FIELDS)[number], Prisma.Decimal> & {
+    employeeId: string;
+    month: number;
+    year: number;
+    workingDays: number;
+    daysPresent: number;
+    daysPaidLeave: number;
+    lopDays: number;
+  },
+>(payslip: T) {
+  return {
+    ...serializePayslip(payslip),
+    period: payslipPeriod(payslip.year, payslip.month),
+    days: await payslipDaysFor(payslip),
+    reimbursements: { telephone: 0, lta: 0, total: 0 },
+    newJoinerArrearDays: 0,
+  };
+}
+
+export async function getPayslipForPrint(
+  id: string,
+  actor: Actor,
+  scope: EmployeeScope,
+  meta: RequestMeta,
+) {
+  const payslip = await prisma.payslip.findUnique({ where: { id }, select: PAYSLIP_PRINT_SELECT });
+  if (!payslip) throw ApiError.notFound('Payslip not found');
+
+  assertCanReadSalary(scope, actor, payslip.employeeId);
+
+  await recordAudit({
+    userId: actor.id,
+    userEmail: actor.email,
+    action: AuditAction.PAYSLIP_DOWNLOAD,
+    entity: 'Payslip',
+    entityId: id,
+    meta,
+  });
+
+  return serializePrintablePayslip(payslip);
+}
+
+export async function getPayslipPrintSheet(
+  query: { year: number; month: number; employeeId?: string },
+  actor: Actor,
+  scope: EmployeeScope,
+  meta: RequestMeta,
+) {
+  const where: Prisma.PayslipWhereInput = {
+    year: query.year,
+    month: query.month,
+    ...(scope.mode === 'all' ? {} : { employeeId: { in: scope.employeeIds ?? [] } }),
+    ...(query.employeeId ? { employeeId: query.employeeId } : {}),
+  };
+
+  const payslips = await prisma.payslip.findMany({
+    where,
+    select: PAYSLIP_PRINT_SELECT,
+    orderBy: { employee: { employeeCode: 'asc' } },
+  });
+
+  const items = [];
+  for (const payslip of payslips) items.push(await serializePrintablePayslip(payslip));
+
+  await recordAudit({
+    userId: actor.id,
+    userEmail: actor.email,
+    action: AuditAction.PAYSLIP_DOWNLOAD,
+    entity: 'Payslip',
+    entityId: null,
+    meta,
+    newValue: { month: query.month, year: query.year, count: items.length },
+  });
+
+  return {
+    period: payslipPeriod(query.year, query.month),
+    count: items.length,
+    items,
+  };
+}

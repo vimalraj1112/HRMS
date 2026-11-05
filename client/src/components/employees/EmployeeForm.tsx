@@ -55,6 +55,10 @@ const fullSchema = z.object({
   bankName: optionalText(120),
   bankAccountNumber: optionalText(40),
   bankIfsc: optionalText(20),
+  esiNumber: optionalText(30),
+  pfNumber: optionalText(30),
+  uan: optionalText(20),
+  payMode: optionalText(30),
 });
 
 const selfSchema = z.object({
@@ -189,6 +193,10 @@ function FullEmployeeForm({ mode, defaultValues, isSubmitting, formError, onSubm
       bankName: defaultValues?.bankName ?? '',
       bankAccountNumber: defaultValues?.bankAccountNumber ?? '',
       bankIfsc: defaultValues?.bankIfsc ?? '',
+      esiNumber: defaultValues?.esiNumber ?? '',
+      pfNumber: defaultValues?.pfNumber ?? '',
+      uan: defaultValues?.uan ?? '',
+      payMode: defaultValues?.payMode ?? '',
     },
   });
 
@@ -320,6 +328,24 @@ function FullEmployeeForm({ mode, defaultValues, isSubmitting, formError, onSubm
           <Input label="Bank name" error={errors.bankName?.message} {...form.register('bankName')} />
           <Input label="Account number" error={errors.bankAccountNumber?.message} {...form.register('bankAccountNumber')} />
           <Input label="IFSC code" error={errors.bankIfsc?.message} {...form.register('bankIfsc')} />
+        </div>
+        <div className="grid gap-4 sm:grid-cols-2">
+          <Input label="PF number" error={errors.pfNumber?.message} {...form.register('pfNumber')} />
+          <Input label="UAN" error={errors.uan?.message} {...form.register('uan')} />
+        </div>
+        <div className="grid gap-4 sm:grid-cols-2">
+          <Input label="ESI account number" error={errors.esiNumber?.message} {...form.register('esiNumber')} />
+          <Select
+            label="Pay mode"
+            placeholder="Select pay mode"
+            options={[
+              { value: 'Bank Transfer', label: 'Bank Transfer' },
+              { value: 'Cheque', label: 'Cheque' },
+              { value: 'Cash', label: 'Cash' },
+            ]}
+            error={errors.payMode?.message}
+            {...form.register('payMode')}
+          />
         </div>
       </fieldset>
 

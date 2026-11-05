@@ -5,6 +5,9 @@ import type {
   PayrollRunListQuery,
   Payslip,
   PayslipListQuery,
+  PayslipPrint,
+  PayslipPrintQuery,
+  PayslipPrintSheet,
   ProcessPayrollPayload,
   ProcessPayrollResult,
   SalaryListQuery,
@@ -66,5 +69,17 @@ export async function listPayslips(query: PayslipListQuery = {}): Promise<Page<P
 
 export async function getPayslip(id: string): Promise<Payslip> {
   const response = await api.get<ApiSuccess<Payslip>>(`/payroll/payslips/${id}`);
+  return response.data.data;
+}
+
+export async function getPayslipPrint(id: string): Promise<PayslipPrint> {
+  const response = await api.get<ApiSuccess<PayslipPrint>>(`/payroll/payslips/${id}/print`);
+  return response.data.data;
+}
+
+export async function getPayslipPrintSheet(query: PayslipPrintQuery): Promise<PayslipPrintSheet> {
+  const response = await api.get<ApiSuccess<PayslipPrintSheet>>('/payroll/payslips/print-sheet', {
+    params: cleanQuery(query),
+  });
   return response.data.data;
 }

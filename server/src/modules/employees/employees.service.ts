@@ -57,6 +57,10 @@ const DETAIL_SELECT = {
   bankName: true,
   bankAccountNumber: true,
   bankIfsc: true,
+  esiNumber: true,
+  pfNumber: true,
+  uan: true,
+  payMode: true,
   createdAt: true,
   updatedAt: true,
   directReports: {
@@ -191,6 +195,9 @@ function redactPrivateFields<T extends Record<string, unknown>>(employee: T): T 
     panNumber: null,
     aadhaarNumber: null,
     bankAccountNumber: null,
+    esiNumber: null,
+    pfNumber: null,
+    uan: null,
   };
 }
 
@@ -238,6 +245,10 @@ export async function createEmployee(payload: CreateEmployeeBody, actor: Actor, 
       bankName: payload.bankName ?? null,
       bankAccountNumber: payload.bankAccountNumber ?? null,
       bankIfsc: payload.bankIfsc ?? null,
+      esiNumber: payload.esiNumber ?? null,
+      pfNumber: payload.pfNumber ?? null,
+      uan: payload.uan ?? null,
+      payMode: payload.payMode ?? null,
     },
     select: SUMMARY_SELECT,
   });
@@ -321,6 +332,10 @@ export async function updateEmployee(
       ...(payload.bankName !== undefined ? { bankName: payload.bankName ?? null } : {}),
       ...(payload.bankAccountNumber !== undefined ? { bankAccountNumber: payload.bankAccountNumber ?? null } : {}),
       ...(payload.bankIfsc !== undefined ? { bankIfsc: payload.bankIfsc ?? null } : {}),
+      ...(payload.esiNumber !== undefined ? { esiNumber: payload.esiNumber ?? null } : {}),
+      ...(payload.pfNumber !== undefined ? { pfNumber: payload.pfNumber ?? null } : {}),
+      ...(payload.uan !== undefined ? { uan: payload.uan ?? null } : {}),
+      ...(payload.payMode !== undefined ? { payMode: payload.payMode ?? null } : {}),
       ...(payload.profilePhotoUrl !== undefined ? { profilePhotoUrl: payload.profilePhotoUrl ?? null } : {}),
     },
     select: SUMMARY_SELECT,

@@ -1,5 +1,5 @@
 import { useQuery } from '@tanstack/react-query';
-import { Eye } from 'lucide-react';
+import { Eye, Printer } from 'lucide-react';
 import { useState } from 'react';
 import { DataTable, type Column } from '@/components/data/DataTable';
 import { StatusBadge } from '@/components/ui/Badge';
@@ -43,8 +43,11 @@ export function PayslipsPage() {
   const [viewing, setViewing] = useState<Payslip | null>(null);
 
   const canReadAny = can(role, 'payslip:read:any');
+  const canPrintAll = can(role, 'payslip:read:any');
   const currentYear = new Date().getFullYear();
   const years = [currentYear - 2, currentYear - 1, currentYear, currentYear + 1].map(String);
+
+  const openPrint = (path: string) => window.open(path, '_blank', 'noopener');
 
   const payslips = useQuery({
     queryKey: ['payslips', { page, year, month, canReadAny }],
@@ -110,9 +113,19 @@ export function PayslipsPage() {
       headerClassName: 'text-right',
       className: 'text-right',
       render: (row) => (
-        <Button variant="ghost" size="icon" aria-label={`View payslip for ${periodLabel(row)}`} onClick={() => setViewing(row)}>
-          <Eye className="h-4 w-4" />
-        </Button>
+        <div className="flex justify-end gap-1">
+          <Button
+            variant="ghost"
+            size="icon"
+            aria-label={`Print payslip for ${periodLabel(row)}`}
+            onClick={() => openPrint(`/payroll/payslips/${row.id}/print`)}
+          >
+            <Printer className="h-4 w-4" />
+          </Button>
+          <Button variant="ghost" size="icon" aria-label={`View payslip for ${periodLabel(row)}`} onClick={() => setViewing(row)}>
+            <Eye className="h-4 w-4" />
+          </Button>
+        </div>
       ),
     },
   ];
@@ -122,6 +135,18 @@ export function PayslipsPage() {
       <PageHeader
         title="Payslips"
         description={canReadAny ? 'Every payslip generated in the system.' : 'Your payslips by month.'}
+        actions={
+          canPrintAll && month ? (
+            <Button
+              leftIcon={<Printer className="h-4 w-4" />}
+              onClick={() => openPrint(`/payroll/payslips/print-sheet?year=${year || currentYear}&month=${month}`)}
+            >
+              Print all for {MONTHS[Number(month) - 1]}
+            </Button>
+          ) : canPrintAll ? (
+            <span className="text-xs text-slate-500">Pick a month to print all payslips</span>
+          ) : null
+        }
       />
 
       <Card>
@@ -210,9 +235,17 @@ function PayslipDialog({ payslip: summary, onClose }: { payslip: Payslip; onClos
       title={`Payslip · ${periodLabel(payslip)}`}
       onClose={onClose}
       footer={
-        <Button variant="secondary" onClick={onClose}>
-          Close
-        </Button>
+        <div className="flex justify-end gap-2">
+          <Button variant="secondary" onClick={onClose}>
+            Close
+          </Button>
+          <Button
+            leftIcon={<Printer className="h-4 w-4" />}
+            onClick={() => window.open(`/payroll/payslips/${payslip.id}/print`, '_blank', 'noopener')}
+          >
+            Print payslip
+          </Button>
+        </div>
       }
     >
       <div className="space-y-5">
