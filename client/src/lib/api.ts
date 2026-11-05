@@ -18,6 +18,8 @@ export class ApiRequestError extends Error {
 
 const BASE_URL = import.meta.env.VITE_API_URL ?? '/api/v1';
 
+export const companyLogoUrl = `${BASE_URL}/branding/logo`;
+
 export const api: AxiosInstance = axios.create({
   baseURL: BASE_URL,
   withCredentials: true,

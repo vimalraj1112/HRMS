@@ -88,6 +88,10 @@ export const PERMISSIONS = {
 
   AUDIT_READ: 'audit:read',
   SETTINGS_MANAGE: 'settings:manage',
+
+  ASSET_READ_OWN: 'asset:read:own',
+  ASSET_READ_ANY: 'asset:read:any',
+  ASSET_MANAGE: 'asset:manage',
 } as const;
 
 export type Permission = (typeof PERMISSIONS)[keyof typeof PERMISSIONS];
@@ -108,6 +112,7 @@ const SELF_SERVICE: Permission[] = [
   PERMISSIONS.REVIEW_READ_OWN,
   PERMISSIONS.ANNOUNCEMENT_READ,
   PERMISSIONS.NOTIFICATION_READ_OWN,
+  PERMISSIONS.ASSET_READ_OWN,
 ];
 
 const HR_STAFF: Permission[] = [
@@ -145,6 +150,8 @@ const HR_STAFF: Permission[] = [
   PERMISSIONS.REVIEW_MANAGE_ANY,
   PERMISSIONS.REPORTS_HR,
   PERMISSIONS.SETTINGS_MANAGE,
+  PERMISSIONS.ASSET_READ_ANY,
+  PERMISSIONS.ASSET_MANAGE,
 ];
 
 export const ROLE_PERMISSIONS: Record<AppRole, readonly Permission[]> = {
@@ -174,6 +181,8 @@ export const ROLE_PERMISSIONS: Record<AppRole, readonly Permission[]> = {
     PERMISSIONS.REVIEW_MANAGE_TEAM,
     PERMISSIONS.REVIEW_MANAGE_ANY,
     PERMISSIONS.REPORTS_HR,
+    PERMISSIONS.ASSET_READ_ANY,
+    PERMISSIONS.ASSET_MANAGE,
   ],
 
   MANAGER: [
@@ -203,6 +212,7 @@ export const ROLE_PERMISSIONS: Record<AppRole, readonly Permission[]> = {
     PERMISSIONS.PAYROLL_READ,
     PERMISSIONS.PAYSLIP_READ_ANY,
     PERMISSIONS.REPORTS_FINANCE,
+    PERMISSIONS.ASSET_READ_ANY,
   ],
 
   RECRUITER: [

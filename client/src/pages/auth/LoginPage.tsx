@@ -7,6 +7,7 @@ import { useLocation, useNavigate } from 'react-router-dom';
 import { toast } from 'sonner';
 import { z } from 'zod';
 import { Button } from '@/components/ui/Button';
+import { CompanyLogo } from '@/components/ui/CompanyLogo';
 import { Input } from '@/components/ui/Input';
 import { toMessage } from '@/lib/api';
 import { queryClient } from '@/lib/query-client';
@@ -64,9 +65,14 @@ export function LoginPage() {
     <div className="flex min-h-screen items-center justify-center bg-slate-100 px-4 py-10">
       <div className="w-full max-w-md">
         <div className="mb-8 text-center">
-          <div className="mx-auto mb-4 flex h-12 w-12 items-center justify-center rounded-xl bg-brand-600 text-lg font-bold text-white">
-            SL
-          </div>
+          <CompanyLogo
+            className="mx-auto mb-4 h-16 w-16"
+            fallback={
+              <div className="mx-auto mb-4 flex h-12 w-12 items-center justify-center rounded-xl bg-brand-600 text-lg font-bold text-white">
+                SL
+              </div>
+            }
+          />
           <h1 className="text-2xl font-semibold tracking-tight text-slate-900">SuperLink HRMS</h1>
           <p className="mt-1 text-sm text-slate-500">Sign in to your account</p>
         </div>

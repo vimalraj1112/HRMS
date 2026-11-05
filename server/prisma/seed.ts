@@ -1,4 +1,4 @@
-import { type Prisma, Role, EmploymentType, Gender, EmployeeStatus } from '@prisma/client';
+import { type Prisma, Role, EmploymentType, Gender, EmployeeStatus, AssetCategory, AssetStatus } from '@prisma/client';
 import bcrypt from 'bcryptjs';
 import path from 'node:path';
 import dotenv from 'dotenv';
@@ -734,6 +734,62 @@ export async function runSeed(): Promise<void> {
   await prisma.salaryStructure.deleteMany({ where: { employeeId: { in: employeeIds } } });
   await prisma.salaryStructure.createMany({ data: salaryRows, skipDuplicates: true });
   console.log(`  salary structures: ${salaryRows.length}`);
+
+  // Inventory: a small, stable asset register so the module ships with demo data.
+  const seededBy = createdEmployees[0];
+  const ASSETS = [
+    { tag: 'SL-LAP-001', name: 'Dell Latitude 5440', category: AssetCategory.LAPTOP, brand: 'Dell', model: 'Latitude 5440', serial: 'DL5440-1001', cost: 82000, age: 210, warranty: 520, assignTo: 0 },
+    { tag: 'SL-LAP-002', name: 'MacBook Air M3', category: AssetCategory.LAPTOP, brand: 'Apple', model: 'MacBook Air M3', serial: 'MBA-M3-2002', cost: 114000, age: 120, warranty: 610, assignTo: 1 },
+    { tag: 'SL-MON-001', name: 'Dell UltraSharp 27"', category: AssetCategory.MONITOR, brand: 'Dell', model: 'U2723QE', serial: 'DU27-3003', cost: 42000, age: 300, warranty: 430, assignTo: 2 },
+    { tag: 'SL-PHN-001', name: 'iPhone 15', category: AssetCategory.MOBILE_PHONE, brand: 'Apple', model: 'iPhone 15', serial: 'IP15-4004', cost: 79000, age: 90, warranty: 640, assignTo: 3 },
+    { tag: 'SL-SIM-001', name: 'Corporate SIM - Airtel', category: AssetCategory.SIM_CARD, brand: 'Airtel', model: 'Postpaid', serial: 'SIM-5005', cost: 500, age: 400, warranty: 0, assignTo: 3 },
+    { tag: 'SL-LAP-003', name: 'HP ProBook 450', category: AssetCategory.LAPTOP, brand: 'HP', model: 'ProBook 450 G10', serial: 'HP450-6006', cost: 68000, age: 45, warranty: 685, assignTo: null },
+    { tag: 'SL-PRN-001', name: 'HP LaserJet Pro', category: AssetCategory.PRINTER, brand: 'HP', model: 'M404dn', serial: 'HJ404-7007', cost: 24000, age: 500, warranty: 0, assignTo: null },
+    { tag: 'SL-NET-001', name: 'Cisco 24-Port Switch', category: AssetCategory.NETWORK_DEVICE, brand: 'Cisco', model: 'CBS250-24T', serial: 'CS250-8008', cost: 38000, age: 650, warranty: 0, assignTo: null },
+  ] as const;
+
+  for (const item of ASSETS) {
+    const holder = item.assignTo === null ? undefined : createdEmployees[item.assignTo];
+    const asset = await prisma.asset.upsert({
+      where: { assetTag: item.tag },
+      update: { name: item.name, category: item.category, brand: item.brand, model: item.model },
+      create: {
+        assetTag: item.tag,
+        name: item.name,
+        category: item.category,
+        brand: item.brand,
+        model: item.model,
+        serialNumber: item.serial,
+        status: holder ? AssetStatus.ASSIGNED : AssetStatus.AVAILABLE,
+        purchaseDate: dayOffset(-item.age),
+        purchaseCost: item.cost,
+        vendor: 'SuperLink Procurement',
+        ...(item.warranty > 0 ? { warrantyExpiry: dayOffset(item.warranty) } : {}),
+        ...(holder ? { assignedEmployeeId: holder.id, assignedAt: dayOffset(-30) } : {}),
+        createdById: seededBy?.userId ?? null,
+      },
+    });
+
+    if (holder) {
+      const existingAssignment = await prisma.assetAssignment.findFirst({
+        where: { assetId: asset.id },
+        select: { id: true },
+      });
+      if (!existingAssignment) {
+        await prisma.assetAssignment.create({
+          data: {
+            assetId: asset.id,
+            employeeId: holder.id,
+            assignedById: seededBy?.userId ?? null,
+            assignedAt: dayOffset(-30),
+            issueCondition: 'New',
+            notes: 'Issued during onboarding',
+          },
+        });
+      }
+    }
+  }
+  console.log(`  assets: ${ASSETS.length}`);
 
   console.log('\nSeed complete. Development credentials:');
   for (const entry of createdEmployees) {

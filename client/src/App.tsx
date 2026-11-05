@@ -21,6 +21,8 @@ import { EmployeesPage } from '@/pages/employees/EmployeesPage';
 import { MyProfilePage } from '@/pages/employees/MyProfilePage';
 import { ForbiddenPage } from '@/pages/ForbiddenPage';
 import { HolidaysPage } from '@/pages/holidays/HolidaysPage';
+import { InventoryPage } from '@/pages/inventory/InventoryPage';
+import { MyAssetsPage } from '@/pages/inventory/MyAssetsPage';
 import { LeaveBalancesPage } from '@/pages/leave/LeaveBalancesPage';
 import { LeaveRequestsPage } from '@/pages/leave/LeaveRequestsPage';
 import { LeaveTypesPage } from '@/pages/leave/LeaveTypesPage';
@@ -281,6 +283,28 @@ export default function App() {
           <ProtectedRoute>
             <Shell>
               <DocumentsPage />
+            </Shell>
+          </ProtectedRoute>
+        }
+      />
+
+      <Route
+        path="/inventory"
+        element={
+          <ProtectedRoute roles={['SUPER_ADMIN', 'HR_ADMIN', 'HR_MANAGER', 'FINANCE']}>
+            <Shell>
+              <InventoryPage />
+            </Shell>
+          </ProtectedRoute>
+        }
+      />
+
+      <Route
+        path="/inventory/my"
+        element={
+          <ProtectedRoute>
+            <Shell>
+              <MyAssetsPage />
             </Shell>
           </ProtectedRoute>
         }

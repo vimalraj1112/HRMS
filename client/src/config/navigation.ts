@@ -8,7 +8,9 @@ import {
   FileText,
   Gift,
   LayoutDashboard,
+  Laptop,
   Megaphone,
+  Package,
   ScrollText,
   Scale,
   Settings,
@@ -77,6 +79,13 @@ export const NAV_SECTIONS: { title: string; items: NavItem[] }[] = [
       { label: 'My Payslips', to: '/payroll/payslips', icon: FileText, roles: ALL_ROLES },
       { label: 'Salary Structures', to: '/payroll/salary', icon: Wallet, roles: ['SUPER_ADMIN', 'FINANCE', 'HR_ADMIN'] },
       { label: 'Payroll Runs', to: '/payroll', icon: Wallet, roles: ['SUPER_ADMIN', 'FINANCE'], end: true },
+    ],
+  },
+  {
+    title: 'Inventory',
+    items: [
+      { label: 'Assets', to: '/inventory', icon: Package, roles: ['SUPER_ADMIN', 'HR_ADMIN', 'HR_MANAGER', 'FINANCE'], end: true },
+      { label: 'My Assets', to: '/inventory/my', icon: Laptop, roles: ALL_ROLES },
     ],
   },
   {

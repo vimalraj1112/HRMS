@@ -59,7 +59,10 @@ export type ClientPermission =
   | 'offer:manage'
   | 'reports:hr'
   | 'reports:finance'
-  | 'settings:manage';
+  | 'settings:manage'
+  | 'asset:read:own'
+  | 'asset:read:any'
+  | 'asset:manage';
 
 const SELF_SERVICE: ClientPermission[] = [
   'employee:read:own',
@@ -76,6 +79,7 @@ const SELF_SERVICE: ClientPermission[] = [
   'announcement:read',
   'salary:read:own',
   'payslip:read:own',
+  'asset:read:own',
 ];
 
 const HR_STAFF: ClientPermission[] = [
@@ -107,6 +111,8 @@ const HR_STAFF: ClientPermission[] = [
   'document:delete',
   'reports:hr',
   'settings:manage',
+  'asset:read:any',
+  'asset:manage',
 ];
 
 export const ROLE_PERMISSIONS: Record<Role, ClientPermission[]> = {
@@ -137,6 +143,8 @@ export const ROLE_PERMISSIONS: Record<Role, ClientPermission[]> = {
     'leave:approve:hr',
     'document:read:any',
     'reports:hr',
+    'asset:read:any',
+    'asset:manage',
   ],
   MANAGER: [
     ...SELF_SERVICE,
@@ -161,6 +169,7 @@ export const ROLE_PERMISSIONS: Record<Role, ClientPermission[]> = {
     'payroll:lock',
     'payslip:read:any',
     'reports:finance',
+    'asset:read:any',
   ],
   RECRUITER: [
     ...SELF_SERVICE,

@@ -3,6 +3,7 @@ import { useState, type ReactNode } from 'react';
 import { NavLink, useNavigate } from 'react-router-dom';
 import { toast } from 'sonner';
 import { Avatar } from '@/components/ui/Avatar';
+import { CompanyLogo } from '@/components/ui/CompanyLogo';
 import { NotificationBell } from '@/components/layout/NotificationBell';
 import { Button } from '@/components/ui/Button';
 import { visibleSections } from '@/config/navigation';
@@ -55,9 +56,14 @@ export function AppShell({ children }: AppShellProps) {
       >
         <div className="flex h-16 items-center justify-between border-b border-slate-200 px-5">
           <div className="flex items-center gap-2">
-            <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-brand-600 text-sm font-bold text-white">
-              SL
-            </div>
+            <CompanyLogo
+              className="h-8 w-8"
+              fallback={
+                <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-brand-600 text-sm font-bold text-white">
+                  SL
+                </div>
+              }
+            />
             <div className="leading-tight">
               <p className="text-sm font-semibold text-slate-900">SuperLink</p>
               <p className="text-xs text-slate-500">HRMS</p>

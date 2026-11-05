@@ -44,12 +44,13 @@ export const Input = forwardRef<HTMLInputElement, InputProps>(function Input(
 export interface SelectProps extends SelectHTMLAttributes<HTMLSelectElement> {
   label?: string;
   error?: string;
+  hint?: string;
   options: { value: string; label: string; disabled?: boolean }[];
   placeholder?: string;
 }
 
 export const Select = forwardRef<HTMLSelectElement, SelectProps>(function Select(
-  { label, error, options, placeholder, className, id, ...props },
+  { label, error, hint, options, placeholder, className, id, ...props },
   ref,
 ) {
   const selectId = id ?? props.name;
@@ -74,7 +75,7 @@ export const Select = forwardRef<HTMLSelectElement, SelectProps>(function Select
           </option>
         ))}
       </select>
-      {error ? <FieldError message={error} /> : null}
+      {error ? <FieldError message={error} /> : hint ? <p className="mt-1.5 text-xs text-slate-500">{hint}</p> : null}
     </div>
   );
 });

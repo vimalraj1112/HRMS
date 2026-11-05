@@ -1,8 +1,10 @@
 import { Router } from 'express';
 import { announcementsRouter } from '../modules/announcements/announcements.routes';
+import { assetsRouter } from '../modules/assets/assets.routes';
 import { attendanceRouter } from '../modules/attendance/attendance.routes';
 import { auditRouter } from '../modules/audit/audit.routes';
 import { authRouter } from '../modules/auth/auth.routes';
+import { brandingRouter } from '../modules/branding/branding.routes';
 import { dashboardRouter } from '../modules/dashboard/dashboard.routes';
 import { departmentsRouter } from '../modules/departments/departments.routes';
 import { designationsRouter } from '../modules/designations/designations.routes';
@@ -23,6 +25,7 @@ export const v1Router = Router();
 
 v1Router.use('/health', healthRouter);
 v1Router.use('/auth', authRouter);
+v1Router.use('/branding', brandingRouter);
 v1Router.use('/users', usersRouter);
 v1Router.use('/employees', employeesRouter);
 v1Router.use('/departments', departmentsRouter);
@@ -32,6 +35,7 @@ v1Router.use('/notifications', notificationsRouter);
 v1Router.use('/audit-logs', auditRouter);
 v1Router.use('/payroll', payrollRouter);
 v1Router.use('/documents', documentsRouter);
+v1Router.use('/assets', assetsRouter);
 v1Router.use('/recruitment', recruitmentRouter);
 v1Router.use('/performance', performanceRouter);
 v1Router.use('/announcements', announcementsRouter);

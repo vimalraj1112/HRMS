@@ -281,8 +281,37 @@ enum AuditAction {
   ANNOUNCEMENT_CREATE
   ANNOUNCEMENT_UPDATE
   ANNOUNCEMENT_DELETE
+  ASSET_CREATE
+  ASSET_UPDATE
+  ASSET_DELETE
+  ASSET_ASSIGN
+  ASSET_RETURN
   SETTINGS_UPDATE
   REPORT_EXPORT
+}
+
+enum AssetCategory {
+  LAPTOP
+  DESKTOP
+  MONITOR
+  MOBILE_PHONE
+  TABLET
+  SIM_CARD
+  HEADSET
+  PERIPHERAL
+  PRINTER
+  NETWORK_DEVICE
+  SOFTWARE_LICENSE
+  FURNITURE
+  OTHER
+}
+
+enum AssetStatus {
+  AVAILABLE
+  ASSIGNED
+  IN_REPAIR
+  RETIRED
+  LOST
 }
 
 // ── Identity & access ────────────────────────────────────────
@@ -319,6 +348,9 @@ model User {
   createdCandidates       Candidate[]        @relation("CandidateCreatedBy")
   createdOffers           Offer[]            @relation("OfferCreatedBy")
   createdGoals            Goal[]             @relation("GoalCreatedBy")
+  createdAssets           Asset[]            @relation("AssetCreatedBy")
+  issuedAssetAssignments  AssetAssignment[]  @relation("AssetAssignmentAssignedBy")
+  closedAssetAssignments  AssetAssignment[]  @relation("AssetAssignmentReturnedBy")
   updatedSettings         SystemSetting[]    @relation("SettingUpdatedBy")
 
   @@index([role])
@@ -441,6 +473,8 @@ model Employee {
   announcements    Announcement[]      @relation("AnnouncementEmployee")
   notifications    Notification[]
   markedAttendance Attendance[]        @relation("AttendanceMarkedBy")
+  assetsAssigned   Asset[]             @relation("AssetAssignedTo")
+  assetAssignments AssetAssignment[]   @relation("AssetAssignmentEmployee")
 
   @@index([departmentId])
   @@index([designationId])
@@ -613,6 +647,68 @@ model EmployeeDocument {
   @@index([employeeId, type])
   @@index([deletedAt])
   @@map("employee_documents")
+}
+
+// ── Inventory ─────────────────────────────────────────────────────────────
+
+model Asset {
+  id                 String        @id @default(uuid()) @db.Uuid
+  assetTag           String        @unique @map("asset_tag") @db.VarChar(40)
+  name               String        @db.VarChar(160)
+  category           AssetCategory
+  brand              String?       @db.VarChar(80)
+  model              String?       @db.VarChar(120)
+  serialNumber       String?       @unique @map("serial_number") @db.VarChar(120)
+  status             AssetStatus   @default(AVAILABLE)
+  purchaseDate       DateTime?     @map("purchase_date") @db.Date
+  purchaseCost       Decimal?      @map("purchase_cost") @db.Decimal(12, 2)
+  vendor             String?       @db.VarChar(160)
+  warrantyExpiry     DateTime?     @map("warranty_expiry") @db.Date
+  notes              String?       @db.VarChar(1000)
+  assignedEmployeeId String?       @map("assigned_employee_id") @db.Uuid
+  assignedAt         DateTime?     @map("assigned_at")
+  deletedAt          DateTime?     @map("deleted_at")
+  createdById        String?       @map("created_by_id") @db.Uuid
+  createdAt          DateTime      @default(now()) @map("created_at")
+  updatedAt          DateTime      @updatedAt @map("updated_at")
+
+  assignedEmployee Employee?         @relation("AssetAssignedTo", fields: [assignedEmployeeId], references: [id], onDelete: SetNull)
+  createdBy        User?             @relation("AssetCreatedBy", fields: [createdById], references: [id], onDelete: SetNull)
+  assignments      AssetAssignment[]
+
+  @@index([status])
+  @@index([category])
+  @@index([assignedEmployeeId])
+  @@index([deletedAt])
+  @@map("assets")
+}
+
+// One row per hand-over. The open row (returnedAt = null) is the current holder;
+// keeping full history means an asset can move between employees safely.
+model AssetAssignment {
+  id               String    @id @default(uuid()) @db.Uuid
+  assetId          String    @map("asset_id") @db.Uuid
+  employeeId       String    @map("employee_id") @db.Uuid
+  assignedById     String?   @map("assigned_by_id") @db.Uuid
+  returnedById     String?   @map("returned_by_id") @db.Uuid
+  assignedAt       DateTime  @default(now()) @map("assigned_at")
+  expectedReturnAt DateTime? @map("expected_return_at") @db.Date
+  returnedAt       DateTime? @map("returned_at")
+  issueCondition   String?   @map("issue_condition") @db.VarChar(160)
+  returnCondition  String?   @map("return_condition") @db.VarChar(160)
+  notes            String?   @db.VarChar(1000)
+  createdAt        DateTime  @default(now()) @map("created_at")
+  updatedAt        DateTime  @updatedAt @map("updated_at")
+
+  asset      Asset    @relation(fields: [assetId], references: [id], onDelete: Cascade)
+  employee   Employee @relation("AssetAssignmentEmployee", fields: [employeeId], references: [id], onDelete: Cascade)
+  assignedBy User?    @relation("AssetAssignmentAssignedBy", fields: [assignedById], references: [id], onDelete: SetNull)
+  returnedBy User?    @relation("AssetAssignmentReturnedBy", fields: [returnedById], references: [id], onDelete: SetNull)
+
+  @@index([assetId, returnedAt])
+  @@index([employeeId, returnedAt])
+  @@index([returnedAt])
+  @@map("asset_assignments")
 }
 
 // ── Payroll ──────────────────────────────────────────────────

@@ -10,6 +10,7 @@ import { logger } from './config/logger';
 import { errorHandler, notFoundHandler } from './middleware/error.middleware';
 import { apiRateLimiter } from './middleware/rateLimit.middleware';
 import { v1Router } from './routes';
+import { ApiError } from './utils/ApiError';
 
 const corsOptions: CorsOptions = {
   origin(origin, callback) {
@@ -17,7 +18,8 @@ const corsOptions: CorsOptions = {
       callback(null, true);
       return;
     }
-    callback(new Error(`Origin ${origin} is not allowed by CORS`));
+    // A rejected browser origin is a 403, not an internal server error.
+    callback(ApiError.forbidden(`Origin ${origin} is not allowed by CORS`));
   },
   credentials: true,
   methods: ['GET', 'POST', 'PUT', 'PATCH', 'DELETE', 'OPTIONS'],
