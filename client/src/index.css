@@ -41,3 +41,22 @@
     @apply rounded-full bg-slate-300;
   }
 }
+
+@media print {
+  @page {
+    size: A4 landscape;
+    margin: 10mm;
+  }
+
+  body {
+    background: #fff;
+  }
+
+  .timesheet-sheet {
+    break-after: page;
+  }
+
+  .timesheet-sheet:last-child {
+    break-after: auto;
+  }
+}

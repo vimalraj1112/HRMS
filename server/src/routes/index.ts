@@ -19,6 +19,7 @@ import { performanceRouter } from '../modules/performance/performance.routes';
 import { recruitmentRouter } from '../modules/recruitment/recruitment.routes';
 import { reportsRouter } from '../modules/reports/reports.routes';
 import { settingsRouter } from '../modules/settings/settings.routes';
+import { timesheetRouter } from '../modules/timesheet/timesheet.routes';
 import { usersRouter } from '../modules/users/users.routes';
 
 export const v1Router = Router();
@@ -31,6 +32,7 @@ v1Router.use('/employees', employeesRouter);
 v1Router.use('/departments', departmentsRouter);
 v1Router.use('/designations', designationsRouter);
 v1Router.use('/attendance', attendanceRouter);
+v1Router.use('/timesheets', timesheetRouter);
 v1Router.use('/notifications', notificationsRouter);
 v1Router.use('/audit-logs', auditRouter);
 v1Router.use('/payroll', payrollRouter);

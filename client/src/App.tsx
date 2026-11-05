@@ -37,6 +37,7 @@ import { JobsPage } from '@/pages/recruitment/JobsPage';
 import { OffersPage } from '@/pages/recruitment/OffersPage';
 import { ReportsPage } from '@/pages/reports/ReportsPage';
 import { SettingsPage } from '@/pages/settings/SettingsPage';
+import { TimesheetsPage } from '@/pages/timesheets/TimesheetsPage';
 import { UsersPage } from '@/pages/users/UsersPage';
 import type { Role } from '@/types/api';
 
@@ -173,6 +174,28 @@ export default function App() {
           <ProtectedRoute>
             <Shell>
               <MyAttendancePage />
+            </Shell>
+          </ProtectedRoute>
+        }
+      />
+
+      <Route
+        path="/timesheets/my"
+        element={
+          <ProtectedRoute>
+            <Shell>
+              <TimesheetsPage mode="my" />
+            </Shell>
+          </ProtectedRoute>
+        }
+      />
+
+      <Route
+        path="/timesheets"
+        element={
+          <ProtectedRoute roles={['SUPER_ADMIN', 'HR_ADMIN', 'HR_MANAGER', 'MANAGER', 'FINANCE']}>
+            <Shell>
+              <TimesheetsPage mode="all" />
             </Shell>
           </ProtectedRoute>
         }

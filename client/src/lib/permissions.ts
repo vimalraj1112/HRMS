@@ -20,6 +20,9 @@ export type ClientPermission =
   | 'attendance:read:any'
   | 'attendance:correct'
   | 'attendance:import'
+  | 'timesheet:read:own'
+  | 'timesheet:read:team'
+  | 'timesheet:read:any'
   | 'leave:apply'
   | 'leave:read:own'
   | 'leave:read:any'
@@ -68,6 +71,7 @@ const SELF_SERVICE: ClientPermission[] = [
   'employee:read:own',
   'attendance:mark',
   'attendance:read:own',
+  'timesheet:read:own',
   'leave:apply',
   'leave:read:own',
   'leaveType:read',
@@ -97,6 +101,7 @@ const HR_STAFF: ClientPermission[] = [
   'attendance:read:any',
   'attendance:correct',
   'attendance:import',
+  'timesheet:read:any',
   'leave:read:any',
   'leave:approve:manager',
   'leave:approve:hr',
@@ -138,6 +143,7 @@ export const ROLE_PERMISSIONS: Record<Role, ClientPermission[]> = {
     'user:read',
     'attendance:read:any',
     'attendance:correct',
+    'timesheet:read:any',
     'leave:read:any',
     'leave:approve:manager',
     'leave:approve:hr',
@@ -153,6 +159,7 @@ export const ROLE_PERMISSIONS: Record<Role, ClientPermission[]> = {
     'department:read',
     'designation:read',
     'attendance:read:team',
+    'timesheet:read:team',
     'leave:read:any',
     'leave:approve:manager',
   ],
@@ -162,6 +169,7 @@ export const ROLE_PERMISSIONS: Record<Role, ClientPermission[]> = {
     'department:read',
     'designation:read',
     'attendance:read:any',
+    'timesheet:read:any',
     'salary:read:any',
     'salary:manage',
     'payroll:read',
